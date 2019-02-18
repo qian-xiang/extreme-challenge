@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>浅香极限挑战</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <script src="js/Vue.js"></script>
+    <script src="js/jquery-3.3.1.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+
+    <style>
+        .option{
+            margin-left: 12px;
+            border-radius:50%;
+        }
+        u{
+            color: orangered;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="container-fluid" style="border:1px solid #fff;height: 100vh;display:flex;justify-content: center;align-items: center;">
+        <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6" style="height:568px;margin-left:auto;margin-right: auto;display: flex;flex-direction:column;align-items: center;justify-content: space-around;">
+            <img src="images/logo.jpg" style="max-height:100px;max-width:100px;">
+            <h3>浅香{{duration}}秒极限挑战</h3> 
+            <p style="word-break:break-all;"><b>游戏规则：请在指定时间内说出题目要求的关于红橙黄绿蓝靛紫以及ABCDEFGHIJKLMNOPQRSTUVWXYZ的组合</b></p>
+            <button class="btn btn-default" v-if="beginGameStatus" v-on:click="game">开始游戏</button>
+            <h2 v-if="!beginGameStatus" v-html="titleNum +'.请输入' + title"></h2>
+                <!-- <button v-if="button_condition" class="btn btn-default" v-on:click="actions" style="border:none;">点此查看答案</button> -->
+                <p v-if="answerStatus" v-on:click="showAnswer">{{answer}}</p>
+                <div v-if="answerStatus" style="display:-ms-flexbox;display:flex;">
+                    <label for="exampleInputName2" style="width: 75px;margin-top: 7px">答案</label>
+                    <input type="text" v-model="response" class="form-control" id="exampleInputName2" placeholder="请输入你的答案">
+                    <button style="height:34px;" type="button" class="btn btn-default" v-on:click="check()" v-bind:disabled="disa">{{submit}}</button>
+                </div>
+
+                <!-- <p>
+                        <button class="btn btn-default option">A</button>
+                        <button class="btn btn-default option">B</button>
+                        <button class="btn btn-default option">C</button>
+                        <button class="btn btn-default option">D</button>
+                        <button class="btn btn-default option">E</button>
+                        <button class="btn btn-default option">F</button>
+                </p> -->
+
+
+
+            <button class="btn btn-default" v-if="answerStatus" v-on:click="game">下一题</button>
+            <button class="btn btn-default" v-if="answerStatus">{{countText}}</button>
+            <button class="btn btn-default" type="button" data-toggle="modal" data-target="#exampleModal" style="display:none;">考一考其它玩家</button>
+
+        </div>
+    </div>
+    <script>
+            var app = new Vue({
+                el: '#app',
+                data: {
+                    answer : "【点此查看答案】",
+                    answerText : "",
+                    answerStatus : false,
+                    title : "",
+                    response : "",
+                    countText : "当前分数",
+                    submit : "提交",
+                    curCount : 0 ,
+                    titleNum : 0,
+                    timeCounter : 0,
+                    handle : 0,
+                    duration:60,
+                    beginGameStatus : true,
+                    disa : false
+                },
+                methods:{
+                    showAnswer:function(){
+                        this.answer = "答案：" + this.answerText
+                    },
+                    game:function(){
+                        this.response = ""
+                        var obj = this
+                        obj.timeCounter = 0
+                        if(obj.handle!=0){
+                            clearInterval(this.handle)
+                        }
+                        var handle = setInterval(function(){
+                            if(obj.timeCounter >= obj.duration){
+                                clearInterval(handle)
+                                obj.disa = true
+                                obj.response = ""
+                                if(obj.curCount >= 10){
+                                    obj.curCount = obj.curCount - 10
+                                    obj.countText = "当前分数：" + obj.curCount
+                                    window.alert("答题时间已超时，扣10分！"+obj.countText)
+                                }else{
+                                    window.alert("答题时间已超时")
+                                }
+                            }
+                            obj.timeCounter += 1
+                            obj.submit = "提交(还剩"+(obj.duration + 1 - obj.timeCounter) + "秒)"
+                        },1000)
+                        this.handle = handle
+                        this.beginGameStatus = false
+                        this.disa = false
+                        if(!this.answerStatus){
+                            this.answerStatus = true
+                        }else if(this.answer != "点此查看答案"){
+                            this.answer = "点此查看答案"
+                        }
+                        this.titleNum += 1
+                        var letter = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                        var color = "红橙黄绿蓝靛紫"
+                        var returnArray = []
+                        //0表示选择字母 1表示选择颜色 2表示二者都有
+                        var randNum = this.generateRandom(0,2)
+                        switch (randNum) {
+                            case 0:
+                                returnArray = this.generateTitle(5,"字母",letter)
+                                break;
+                            case 1:
+                                returnArray = this.generateTitle(5,"颜色",color)
+                                break
+                            default:
+                                returnArray = [this.generateTitle(3,"字母",letter)[0]+ "、"+ this.generateTitle(2,"颜色",color)[0],
+                                                this.generateTitle(3,"字母",letter)[1] + this.generateTitle(2,"颜色",color)[1]
+                                                ]
+                                break
+                        }
+                        this.title = returnArray[0]
+                        this.answerText = returnArray[1]
+                        returnArray = null
+                    },
+                    //生成一个从min到max的整数
+                    generateRandom:function(min,max){
+                       return Math.floor(Math.random()*(max + 1 - min) + min)
+                    },
+                    //考察多少个字母 类别：字母或者颜色
+                    generateTitle:function(num,sort,str){
+                        var strArray = str.split("")
+                        //字母数组长度
+                        var strLen = strArray.length
+                        var direction,item
+                        var output = [];
+                        var answerArray = [];
+                        for (let index = 0; index < num; index++) {
+                            //取一个随机位置
+                            var pos = this.generateRandom(0,strLen - 1)
+                            if(pos === 0){
+                                direction = "后"
+                                //第0位数组的后面的randpos-pos个位置
+                                randpos = this.generateRandom(pos + 1,strLen - 1)
+                                item = "<u>" + strArray[pos] + direction + "</u>的第<u>"+(randpos - pos) + "</u>个" + sort
+                            }else if(pos > 0 && pos < strLen - 1){
+                                // direction = "前和后"
+                                //随机选一个方向并且随机在该方向上选一个位置
+                                randpos = this.generateRandom(0,1) ? this.generateRandom(pos + 1,strArray.length - 1) : this.generateRandom(0,pos - 1)                               
+                                if(randpos > pos){
+                                    direction = "后"
+                                    item = "<u>" + strArray[pos] + direction + "</u>的第<u>"+(randpos - pos) + "</u>个" + sort
+                                }else{
+                                    direction = "前"
+                                    item = "<u>" + strArray[pos] + direction + "</u>的第<u>"+(pos - randpos ) + "</u>个" + sort
+                                }                               
+
+                            }else{
+                                direction = "前"
+                                randpos = this.generateRandom(0,pos - 1)
+                                item = "<u>" + strArray[pos] + direction + "</u>的第<u>"+(pos - randpos) + "</u>个" + sort
+                            }
+                            answerArray.push(strArray[randpos])
+                            output.push(item)
+                        }
+                        // this.answer = "答案：" + answerArray.join("")
+                        // this.title = "请输入"+output.join("、")
+
+                        return [output.join("、"), answerArray.join("")]
+                    },
+                    check : function(){
+                        if(this.response.trim().length === 0){
+                            return window.alert("答案不能为空！")
+                        } 
+                        this.submit = "提交"
+                        clearInterval(this.handle)
+                        if(this.timeCounter>this.duration){
+                            obj.response = ""
+                            return window.alert("答题时间已超时！")
+                        }
+                        
+                        this.disa = true
+                        if(this.response.trim().toUpperCase() == this.answerText){
+                            this.curCount = this.curCount + 10
+                            this.countText = "当前分数：" + this.curCount
+                            window.alert("回答正确，加10分！"+this.countText)
+                        }else if(this.curCount >= 10){
+                            this.curCount = this.curCount - 10
+                            this.countText = "当前分数：" + this.curCount
+                            window.alert("回答错误，扣10分！"+this.countText)
+                        }else{
+                            window.alert("回答错误！")
+                        }
+                        obj.response = ""
+
+                    }
+
+                }
+            })
+
+
+           
+        </script>
+</body>
+</html>
